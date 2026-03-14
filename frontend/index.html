@@ -30,6 +30,8 @@
             <header class="top-bar">
                 <h1 id="page-title">Drone Roster</h1>
                 <div class="top-bar-controls">
+                    <button id="open-modal-btn" class="btn btn-primary" style="height: 36px; padding: 0 16px; font-size: 13px;">+ Add Drone</button>
+                    
                     <input type="text" placeholder="Search fleet..." class="search-input">
                     <div id="clock" class="clock">00:00</div>
                 </div>
@@ -37,16 +39,17 @@
             
             <main id="content-area" class="content-area">
                 </main>
-    <div class="modal-overlay" style="display: flex;"> 
+
+        </div> </div> <div id="drone-modal" class="modal-overlay" style="display: none;"> 
         <div class="modal-content">
             <h2 style="margin-bottom: 24px;">Register New Drone</h2>
             <div class="form-group">
                 <label>Drone Model</label>
-                <input type="text" class="input-field" placeholder="e.g., DJI Inspire 3">
+                <input type="text" id="drone-model-input" class="input-field" placeholder="e.g., DJI Inspire 3">
             </div>
             <div style="display: flex; gap: 12px; margin-top: 32px; justify-content: flex-end;">
-                <button class="btn btn-secondary">Cancel</button>
-                <button class="btn btn-primary">Save Drone</button>
+                <button id="cancel-btn" class="btn btn-secondary">Cancel</button>
+                <button id="save-drone-btn" class="btn btn-primary">Save Drone</button>
             </div>
         </div>
     </div>

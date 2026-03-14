@@ -5,6 +5,13 @@ const contentArea = document.getElementById('content-area');
 const pageTitle = document.getElementById('page-title');
 const navItems = document.querySelectorAll('.nav-item');
 
+// Modal Elements
+const droneModal = document.getElementById('drone-modal');
+const openModalBtn = document.getElementById('open-modal-btn');
+const cancelBtn = document.getElementById('cancel-btn');
+const saveDroneBtn = document.getElementById('save-drone-btn');
+const droneModelInput = document.getElementById('drone-model-input');
+
 // --- Render Functions ---
 
 /**
@@ -42,7 +49,7 @@ function renderDroneCards(drones) {
                 </div>
             </div>
         `;
-    }).join(''); // Join the array into a single HTML string
+    }).join('');
 
     return `<div class="card-grid">${cardsHtml}</div>`;
 }
@@ -77,12 +84,9 @@ function initApp() {
     // Set up Sidebar Navigation
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
-            // Remove active class from all
             navItems.forEach(nav => nav.classList.remove('active'));
-            // Add active class to clicked item
             e.target.classList.add('active');
             
-            // Basic Routing
             const view = e.target.getAttribute('href').replace('#', '');
             if (view === 'drones') {
                 loadDronesView();
@@ -98,6 +102,55 @@ function initApp() {
         const now = new Date();
         document.getElementById('clock').textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     }, 1000);
+
+    // --- Modal Logic ---
+    openModalBtn.addEventListener('click', () => {
+        droneModal.style.display = 'flex';
+        droneModelInput.value = ''; // clear previous input
+        droneModelInput.focus();
+    });
+
+    cancelBtn.addEventListener('click', () => {
+        droneModal.style.display = 'none';
+    });
+
+    // --- Save Drone Logic ---
+    saveDroneBtn.addEventListener('click', async () => {
+        const modelName = droneModelInput.value.trim();
+        
+        if (!modelName) {
+            showToast('Please enter a drone model.', 'warning');
+            return;
+        }
+
+        // Disable button to prevent double-clicks
+        saveDroneBtn.textContent = 'Saving...';
+        saveDroneBtn.disabled = true;
+
+        try {
+            // Create the payload for Spring Boot
+            const newDrone = {
+                model: modelName,
+                status: 'IDLE',
+                batteryPercentage: 100 // Brand new drones start fully charged!
+            };
+
+            // Send to Java Backend
+            await api.createDrone(newDrone);
+            
+            // Success! Close modal, show toast, and reload the grid
+            droneModal.style.display = 'none';
+            showToast(`${modelName} registered successfully!`, 'success');
+            await loadDronesView(); 
+
+        } catch (error) {
+            console.error("Save failed");
+        } finally {
+            // Reset button state
+            saveDroneBtn.textContent = 'Save Drone';
+            saveDroneBtn.disabled = false;
+        }
+    });
 
     // Load initial data
     loadDronesView();

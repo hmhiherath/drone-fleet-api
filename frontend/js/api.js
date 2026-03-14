@@ -9,9 +9,9 @@ const API_BASE_URL = 'http://localhost:8080/api';
 function showToast(message, type = 'danger') {
     const container = document.getElementById('toast-container');
     
+    // Create the toast element
     const toast = document.createElement('div');
     toast.className = `toast`;
-    // Add a border color based on the type (danger, success, etc.)
     toast.style.borderLeft = `4px solid var(--accent-${type})`;
     toast.textContent = message;
     
@@ -66,10 +66,93 @@ const api = {
         }
     },
 
-    // --- Drone Endpoints ---
+    // ==========================================
+    // DRONE ENDPOINTS
+    // ==========================================
+    
     async getDrones() {
         return this.request('/drones');
     },
+
+    async getDroneById(id) {
+        return this.request(`/drones/${id}`);
+    },
+
+    async createDrone(droneData) {
+        return this.request('/drones', {
+            method: 'POST',
+            body: JSON.stringify(droneData)
+        });
+    },
+
+    async updateDrone(id, droneData) {
+        return this.request(`/drones/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(droneData)
+        });
+    },
+
+    async deleteDrone(id) {
+        return this.request(`/drones/${id}`, {
+            method: 'DELETE'
+        });
+    },
+
+    // ==========================================
+    // PILOT ENDPOINTS
+    // ==========================================
     
-    // We will add POST, PUT, DELETE methods here later as needed!
+    async getPilots() {
+        return this.request('/pilots');
+    },
+
+    async createPilot(pilotData) {
+        return this.request('/pilots', {
+            method: 'POST',
+            body: JSON.stringify(pilotData)
+        });
+    },
+
+    async updatePilot(id, pilotData) {
+        return this.request(`/pilots/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(pilotData)
+        });
+    },
+
+    async deletePilot(id) {
+        return this.request(`/pilots/${id}`, {
+            method: 'DELETE'
+        });
+    },
+
+    // ==========================================
+    // FLIGHT MISSION ENDPOINTS
+    // ==========================================
+    // Note: Adjust the '/flight-missions' path if your Spring Boot
+    // @RequestMapping is just set to '/missions' instead.
+
+    async getMissions() {
+        return this.request('/flight-missions');
+    },
+
+    async createMission(missionData) {
+        return this.request('/flight-missions', {
+            method: 'POST',
+            body: JSON.stringify(missionData)
+        });
+    },
+
+    async updateMission(id, missionData) {
+        return this.request(`/flight-missions/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(missionData)
+        });
+    },
+
+    async deleteMission(id) {
+        return this.request(`/flight-missions/${id}`, {
+            method: 'DELETE'
+        });
+    }
 };
