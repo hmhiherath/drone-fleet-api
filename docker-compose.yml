@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------
+  # Backend API Service
+  # ----------------------------------------
+  fleet-api:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    container_name: fleet-api-container
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    networks:
+      - fleet-network
+
+  # ----------------------------------------
+  # Frontend UI Service
+  # ----------------------------------------
+  fleet-ui:
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
+    container_name: fleet-ui-container
+    ports:
+      - "80:80" # Maps local port 80 to container port 80
+    depends_on:
+      - fleet-api # Ensures backend starts before frontend
+    restart: unless-stopped
+    networks:
+      - fleet-network
+
+# Define a custom network so containers can talk securely
+networks:
+  fleet-network:
+    driver: bridge
