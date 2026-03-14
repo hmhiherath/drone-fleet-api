@@ -4,157 +4,213 @@
 const contentArea = document.getElementById('content-area');
 const pageTitle = document.getElementById('page-title');
 const navItems = document.querySelectorAll('.nav-item');
-
-// Modal Elements
-const droneModal = document.getElementById('drone-modal');
 const openModalBtn = document.getElementById('open-modal-btn');
-const cancelBtn = document.getElementById('cancel-btn');
-const saveDroneBtn = document.getElementById('save-drone-btn');
+
+// Drone Modal Elements
+const droneModal = document.getElementById('drone-modal');
 const droneModelInput = document.getElementById('drone-model-input');
+const saveDroneBtn = document.getElementById('save-drone-btn');
+
+// Pilot Modal Elements
+const pilotModal = document.getElementById('pilot-modal');
+const pilotNameInput = document.getElementById('pilot-name-input');
+const pilotLicenseInput = document.getElementById('pilot-license-input');
+const savePilotBtn = document.getElementById('save-pilot-btn');
+
+// Mission Modal Elements
+const missionModal = document.getElementById('mission-modal');
+const missionDestInput = document.getElementById('mission-dest');
+const droneSelect = document.getElementById('drone-select');
+const pilotSelect = document.getElementById('pilot-select');
+const saveMissionBtn = document.getElementById('save-mission-btn');
 
 // --- Render Functions ---
 
 /**
- * Generates the HTML string for the Drone Fleet grid
+ * PHASE 1 & 2: Render Drone Cards
  */
 function renderDroneCards(drones) {
-    if (drones.length === 0) {
-        return `<div style="text-align: center; color: var(--text-secondary); margin-top: 40px;">No drones currently in the fleet.</div>`;
-    }
+    if (drones.length === 0) return `<div class="empty-state">No drones in fleet. Click "+ Add Drone" to begin.</div>`;
 
-    const cardsHtml = drones.map(drone => {
-        // Determine status colors based on backend data
-        let statusClass = 'success'; // Default for IDLE
-        if (drone.status === 'IN_FLIGHT') statusClass = 'warning';
-        if (drone.status === 'MAINTENANCE') statusClass = 'danger';
-
-        // Check for low battery
-        const isLowBattery = drone.batteryPercentage < 20;
-        const batteryColor = isLowBattery ? 'var(--accent-danger)' : 'inherit';
-
+    return `<div class="card-grid">` + drones.map(drone => {
+        let statusClass = drone.status === 'IDLE' ? 'success' : (drone.status === 'IN_FLIGHT' ? 'warning' : 'danger');
         return `
-            <div class="drone-card" style="animation: fadeInUp 0.4s ease forwards;">
+            <div class="drone-card">
                 <div class="card-header">
                     <div>
                         <span class="secondary">ID: ${drone.id}</span>
                         <h3>${drone.model}</h3>
                     </div>
-                    <div class="status-dot ${statusClass}"></div>
+                    <div class="card-actions">
+                        <button onclick="handleDeleteDrone(${drone.id})" class="action-btn delete">🗑</button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="battery-indicator">
-                        <span class="battery-text" style="color: ${batteryColor}">${drone.batteryPercentage}% Battery</span>
+                        <span class="battery-text" style="color: ${drone.batteryPercentage < 20 ? 'var(--accent-danger)' : 'inherit'}">
+                            ${drone.batteryPercentage}% Battery
+                        </span>
                     </div>
-                    <span class="badge ${statusClass}">${drone.status || 'IDLE'}</span>
+                    <select onchange="handleStatusChange(${drone.id}, this.value)" class="status-select ${drone.status.toLowerCase()}">
+                        <option value="IDLE" ${drone.status === 'IDLE' ? 'selected' : ''}>IDLE</option>
+                        <option value="IN_FLIGHT" ${drone.status === 'IN_FLIGHT' ? 'selected' : ''}>IN FLIGHT</option>
+                        <option value="MAINTENANCE" ${drone.status === 'MAINTENANCE' ? 'selected' : ''}>MAINTENANCE</option>
+                    </select>
                 </div>
-            </div>
-        `;
-    }).join('');
+            </div>`;
+    }).join('') + `</div>`;
+}
 
-    return `<div class="card-grid">${cardsHtml}</div>`;
+/**
+ * PHASE 4: Render Mission Cards
+ */
+function renderMissionCards(missions) {
+    if (missions.length === 0) return `<div class="empty-state">No active missions. Dispatch one from the top bar.</div>`;
+
+    return `<div class="card-grid">` + missions.map(m => `
+        <div class="drone-card">
+            <div class="card-header">
+                <div>
+                    <span class="secondary">MISSION #${m.id}</span>
+                    <h3>To: ${m.destination}</h3>
+                </div>
+                <span class="badge ${m.status === 'COMPLETED' ? 'success' : 'warning'}">${m.status}</span>
+            </div>
+            <div class="mission-meta">
+                <div class="meta-item"><span>Drone:</span> <strong>${m.assignedDrone?.model || 'Unknown'}</strong></div>
+                <div class="meta-item"><span>Pilot:</span> <strong>${m.assignedPilot?.name || 'Unknown'}</strong></div>
+            </div>
+        </div>
+    `).join('') + `</div>`;
 }
 
 // --- View Controllers ---
 
-/**
- * Fetches drones from the backend and updates the UI
- */
-async function loadDronesView() {
-    pageTitle.textContent = 'Drone Roster';
-    contentArea.innerHTML = `<div style="color: var(--text-secondary);">Loading fleet data...</div>`;
+async function loadView(view) {
+    state.currentView = view;
+    navItems.forEach(nav => nav.classList.remove('active'));
+    document.querySelector(`[href="#${view}"]`).classList.add('active');
     
-    try {
-        // Call the Spring Boot API
-        const drones = await api.getDrones();
-        state.drones = drones; // Update local state
-        
-        // Inject the generated HTML into the DOM
-        contentArea.innerHTML = renderDroneCards(state.drones);
-    } catch (error) {
-        contentArea.innerHTML = `<div style="color: var(--accent-danger);">Failed to load fleet data.</div>`;
+    // Update button text and UI labels based on view
+    if (view === 'drones') {
+        pageTitle.textContent = 'Drone Roster';
+        openModalBtn.textContent = '+ Add Drone';
+        const data = await api.getDrones();
+        state.drones = data;
+        contentArea.innerHTML = renderDroneCards(data);
+    } else if (view === 'pilots') {
+        pageTitle.textContent = 'Pilot Roster';
+        openModalBtn.textContent = '+ Add Pilot';
+        const data = await api.getPilots();
+        state.pilots = data;
+        contentArea.innerHTML = renderPilotCards(data); // Defined in api.js
+    } else if (view === 'missions') {
+        pageTitle.textContent = 'Mission Control';
+        openModalBtn.textContent = '🚀 New Mission';
+        const data = await api.getMissions();
+        state.missions = data;
+        contentArea.innerHTML = renderMissionCards(data);
     }
 }
 
 // --- App Initialization ---
 
-/**
- * Sets up navigation clicks and loads the initial view
- */
 function initApp() {
-    // Set up Sidebar Navigation
+    // Navigation Setup
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
-            navItems.forEach(nav => nav.classList.remove('active'));
-            e.target.classList.add('active');
-            
             const view = e.target.getAttribute('href').replace('#', '');
-            if (view === 'drones') {
-                loadDronesView();
-            } else {
-                pageTitle.textContent = e.target.textContent;
-                contentArea.innerHTML = `<div style="color: var(--text-secondary); margin-top: 40px; text-align: center;">${e.target.textContent} view is under construction.</div>`;
-            }
+            loadView(view);
         });
     });
 
-    // Start the clock
+    // Global Modal Opener Logic
+    openModalBtn.addEventListener('click', async () => {
+        if (state.currentView === 'drones') {
+            droneModal.style.display = 'flex';
+        } else if (state.currentView === 'pilots') {
+            pilotModal.style.display = 'flex';
+        } else if (state.currentView === 'missions') {
+            // Populate dropdowns with available assets before showing
+            const assets = await api.getAvailableAssets();
+            droneSelect.innerHTML = assets.drones.map(d => `<option value="${d.id}">${d.model}</option>`).join('');
+            pilotSelect.innerHTML = assets.pilots.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            
+            if (assets.drones.length === 0 || assets.pilots.length === 0) {
+                showToast("Cannot dispatch: Need at least 1 IDLE drone and 1 AVAILABLE pilot.", "warning");
+            } else {
+                missionModal.style.display = 'flex';
+            }
+        }
+    });
+
+    // Universal Modal Cancel
+    document.querySelectorAll('.btn-secondary').forEach(btn => {
+        btn.addEventListener('click', () => {
+            droneModal.style.display = 'none';
+            pilotModal.style.display = 'none';
+            missionModal.style.display = 'none';
+        });
+    });
+
+    // Save Logic for Drones
+    saveDroneBtn.addEventListener('click', async () => {
+        const payload = { model: droneModelInput.value, status: 'IDLE', batteryPercentage: 100 };
+        await api.createDrone(payload);
+        droneModal.style.display = 'none';
+        showToast("Drone added", "success");
+        loadView('drones');
+    });
+
+    // Save Logic for Pilots
+    savePilotBtn.addEventListener('click', async () => {
+        const payload = { name: pilotNameInput.value, licenseNumber: pilotLicenseInput.value, status: 'AVAILABLE' };
+        await api.createPilot(payload);
+        pilotModal.style.display = 'none';
+        showToast("Pilot registered", "success");
+        loadView('pilots');
+    });
+
+    // Save Logic for Missions (PHASE 4)
+    saveMissionBtn.addEventListener('click', async () => {
+        const payload = {
+            destination: missionDestInput.value,
+            droneId: droneSelect.value,
+            pilotId: pilotSelect.value,
+            status: 'PLANNED'
+        };
+        await api.createMission(payload);
+        missionModal.style.display = 'none';
+        showToast("Mission Dispatched!", "success");
+        loadView('missions');
+    });
+
+    // Start Clock
     setInterval(() => {
-        const now = new Date();
-        document.getElementById('clock').textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        document.getElementById('clock').textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     }, 1000);
 
-    // --- Modal Logic ---
-    openModalBtn.addEventListener('click', () => {
-        droneModal.style.display = 'flex';
-        droneModelInput.value = ''; // clear previous input
-        droneModelInput.focus();
-    });
-
-    cancelBtn.addEventListener('click', () => {
-        droneModal.style.display = 'none';
-    });
-
-    // --- Save Drone Logic ---
-    saveDroneBtn.addEventListener('click', async () => {
-        const modelName = droneModelInput.value.trim();
-        
-        if (!modelName) {
-            showToast('Please enter a drone model.', 'warning');
-            return;
-        }
-
-        // Disable button to prevent double-clicks
-        saveDroneBtn.textContent = 'Saving...';
-        saveDroneBtn.disabled = true;
-
-        try {
-            // Create the payload for Spring Boot
-            const newDrone = {
-                model: modelName,
-                status: 'IDLE',
-                batteryPercentage: 100 // Brand new drones start fully charged!
-            };
-
-            // Send to Java Backend
-            await api.createDrone(newDrone);
-            
-            // Success! Close modal, show toast, and reload the grid
-            droneModal.style.display = 'none';
-            showToast(`${modelName} registered successfully!`, 'success');
-            await loadDronesView(); 
-
-        } catch (error) {
-            console.error("Save failed");
-        } finally {
-            // Reset button state
-            saveDroneBtn.textContent = 'Save Drone';
-            saveDroneBtn.disabled = false;
-        }
-    });
-
-    // Load initial data
-    loadDronesView();
+    loadView('drones');
 }
 
-// Boot the application when the DOM is ready
+// Initialize on Load
 document.addEventListener('DOMContentLoaded', initApp);
+
+// --- Window Handlers ---
+window.handleDeleteDrone = async (id) => {
+    if (confirm("Delete this drone?")) {
+        await api.deleteDrone(id);
+        showToast("Drone removed", "warning");
+        loadView('drones');
+    }
+};
+
+window.handleStatusChange = async (id, newStatus) => {
+    const drone = state.drones.find(d => d.id == id);
+    await api.updateDrone(id, { ...drone, status: newStatus });
+    showToast("Status Updated", "success");
+    loadView('drones');
+};
+
+// Expose refresh for api.js
+window.loadPilotsView = () => loadView('pilots');

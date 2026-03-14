@@ -1,32 +1,52 @@
 /* frontend/css/variables.css */
 
 :root {
-    /* Typography */
-    /* Using Inter as a web-safe alternative to Apple's system font */
+    /* --- Phase 1: Typography & Core Brand --- */
     --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --accent-brand: #0A84FF; /* Interactive elements, buttons, active sidebar links */
+    --accent-brand-hover: #409CFF; 
 
-    /* Color Palette (Dark Mode Base) */
-    --bg-base: #000000; /* Pure black background for maximum contrast */
-    --bg-surface: rgba(28, 28, 30, 0.7); /* Translucent dark gray for cards/panels */
+    /* --- Phase 2: Color Palette (System Dark Mode) --- */
+    --bg-base: #000000;          /* Deepest black for background */
+    --bg-surface: rgba(28, 28, 30, 0.7); /* Translucent cards */
+    --bg-modal: #1C1C1E;         /* Solid grey for focused modals */
+    --bg-input: rgba(255, 255, 255, 0.05);
     
-    /* Text Colors */
+    /* Text Hierarchy */
     --text-primary: #FFFFFF;
     --text-secondary: #8E8E93;
+    --text-tertiary: rgba(235, 235, 245, 0.6); 
+    --text-inverse: #000000;
 
-    /* Status Accents (The Traffic Light System) */
-    --accent-success: #34C759; /* Active drones, Completed missions */
-    --accent-warning: #FF9F0A; /* In-flight, Scheduled, Maintenance */
-    --accent-danger: #FF3B30; /* Errors, Low Battery */
-    --accent-brand: #0A84FF; /* Interactive elements, buttons, active sidebar links */
+    /* --- Phase 3: Status Accents (The Traffic Light System) --- */
+    /* Vibrant status colors for indicators */
+    --accent-success: #34C759; /* IDLE, AVAILABLE, COMPLETED */
+    --accent-warning: #FF9F0A; /* IN_FLIGHT, ON_MISSION, PLANNED */
+    --accent-danger: #FF3B30;  /* MAINTENANCE, LOW_BATTERY, CANCELLED */
 
-    /* Materials & Effects */
-    --glass-blur: blur(20px) saturate(180%);
+    /* Subdued Backgrounds for Badges & Row Highlighting */
+    --bg-success-subtle: rgba(52, 199, 89, 0.15);
+    --bg-warning-subtle: rgba(255, 159, 10, 0.15);
+    --bg-danger-subtle: rgba(255, 59, 48, 0.15);
+    --bg-brand-subtle: rgba(10, 132, 255, 0.15);
+
+    /* --- Phase 4: Materials, Glassmorphism & Depth --- */
+    /* Surface Materials */
+    --glass-blur: blur(25px) saturate(190%);
     --border-subtle: 1px solid rgba(255, 255, 255, 0.1);
+    --border-focus: 2px solid var(--accent-brand);
     
-    /* Border Radii */
-    --radius-lg: 16px; /* For main cards */
-    --radius-md: 10px; /* For buttons and inputs */
+    /* Shadows to create Z-index depth */
+    --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --shadow-modal: 0 24px 48px rgba(0, 0, 0, 0.8);
+    --shadow-button: 0 2px 8px rgba(10, 132, 255, 0.3);
 
-    /* Animation Timing */
-    --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    /* Geometric Properties */
+    --radius-lg: 18px; /* For Drone and Mission cards */
+    --radius-md: 12px; /* For Buttons, Inputs, Sidebar */
+    --radius-sm: 8px;  /* For Badges and Tags */
+
+    /* Motion Curve (Apple-style ease-out) */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s ease-out;
 }
