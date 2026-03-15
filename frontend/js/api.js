@@ -117,18 +117,18 @@ const api = {
     // PHASE 4: MISSION CONTROL
     // ==========================================
     async getMissions() { 
-        return this.request('/flight-missions'); 
+        return this.request('/missions'); 
     },
 
     async createMission(missionData) {
-        return this.request('/flight-missions', { 
+        return this.request('/missions', { 
             method: 'POST', 
             body: JSON.stringify(missionData) 
         });
     },
 
     async updateMissionStatus(id, status) {
-        return this.request(`/flight-missions/${id}/status`, {
+        return this.request(`/missions/${id}/status`, {
             method: 'PATCH',
             // Note: If your backend expects a specific DTO, ensure this matches.
             body: JSON.stringify({ status }) 
