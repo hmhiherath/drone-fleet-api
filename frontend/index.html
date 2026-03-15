@@ -5,104 +5,138 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FleetOS | Drone Delivery Manager</title>
     
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     
-    <div id="app-grid" class="app-container">
+    <div class="app-container">
         
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h2>FleetOS</h2>
             </div>
+            
             <nav class="sidebar-nav">
-                <a href="#drones" class="nav-item active">Drones</a>
-                <a href="#missions" class="nav-item">Flight Missions</a>
-                <a href="#pilots" class="nav-item">Pilots</a>
+                <a href="#drones" class="nav-item active">
+                    <span aria-hidden="true">🚁</span> Drones
+                </a>
+                <a href="#pilots" class="nav-item">
+                    <span aria-hidden="true">🧑‍✈️</span> Pilots
+                </a>
+                <a href="#missions" class="nav-item">
+                    <span aria-hidden="true">🗺️</span> Flight Missions
+                </a>
             </nav>
+
+            <div class="sidebar-metrics" style="margin-top: auto; padding-top: 24px; border-top: var(--border-subtle);">
+                <h4 style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">Live Fleet Status</h4>
+                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-secondary);">Active Missions</span>
+                        <strong id="metric-missions" style="color: var(--accent-brand);">0</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-secondary);">Available Drones</span>
+                        <strong id="metric-drones" style="color: var(--accent-success);">0</strong>
+                    </div>
+                </div>
+            </div>
         </aside>
         
         <div class="main-wrapper">
             
             <header class="top-bar">
-                <h1 id="page-title">Drone Roster</h1>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <button class="mobile-menu-btn" aria-label="Toggle Sidebar">☰</button>
+                    <h1 id="page-title">Drone Roster</h1>
+                </div>
+                
                 <div class="top-bar-controls">
                     <button id="open-modal-btn" class="btn btn-primary" style="height: 36px; padding: 0 16px; font-size: 13px;">+ Add Drone</button>
-                    
-                    <input type="text" placeholder="Search fleet..." class="search-input">
+                    <input type="text" placeholder="Search fleet..." class="search-input" aria-label="Search">
                     <div id="clock" class="clock">00:00</div>
                 </div>
             </header>
             
-            <main id="content-area" class="content-area">
-                </main>
+            <main id="content-area" class="content-area" role="main"></main>
 
         </div> 
     </div>
 
-    <div id="drone-modal" class="modal-overlay" style="display: none;"> 
+    <div id="drone-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="drone-modal-title"> 
         <div class="modal-content">
-            <h2 style="margin-bottom: 24px;">Register New Drone</h2>
+            <h2 id="drone-modal-title" style="margin-bottom: 24px;">Register New Drone</h2>
             <div class="form-group">
-                <label>Drone Model</label>
-                <input type="text" id="drone-model-input" class="input-field" placeholder="e.g., DJI Inspire 3">
+                <label for="drone-model-input">Drone Model</label>
+                <input type="text" id="drone-model-input" class="input-field" placeholder="e.g., DJI Inspire 3" autocomplete="off">
             </div>
             <div style="display: flex; gap: 12px; margin-top: 32px; justify-content: flex-end;">
-                <button class="btn btn-secondary">Cancel</button>
-                <button id="save-drone-btn" class="btn btn-primary">Save Drone</button>
+                <button type="button" class="btn btn-secondary" data-close="drone-modal">Cancel</button>
+                <button type="button" id="save-drone-btn" class="btn btn-primary">Save Drone</button>
             </div>
         </div>
     </div>
 
-    <div id="pilot-modal" class="modal-overlay" style="display: none;"> 
+    <div id="pilot-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pilot-modal-title"> 
         <div class="modal-content">
-            <h2 style="margin-bottom: 24px;">Register New Pilot</h2>
+            <h2 id="pilot-modal-title" style="margin-bottom: 24px;">Register New Pilot</h2>
             <div class="form-group">
-                <label>Pilot Name</label>
-                <input type="text" id="pilot-name-input" class="input-field" placeholder="Full legal name">
+                <label for="pilot-name-input">Pilot Name</label>
+                <input type="text" id="pilot-name-input" class="input-field" placeholder="Full legal name" autocomplete="off">
             </div>
             <div class="form-group">
-                <label>License Number</label>
-                <input type="text" id="pilot-license-input" class="input-field" placeholder="FAA / CAA License No.">
+                <label for="pilot-license-input">License Number</label>
+                <input type="text" id="pilot-license-input" class="input-field" placeholder="FAA / CAA License No." autocomplete="off">
             </div>
             <div style="display: flex; gap: 12px; margin-top: 32px; justify-content: flex-end;">
-                <button class="btn btn-secondary">Cancel</button>
-                <button id="save-pilot-btn" class="btn btn-primary">Save Pilot</button>
+                <button type="button" class="btn btn-secondary" data-close="pilot-modal">Cancel</button>
+                <button type="button" id="save-pilot-btn" class="btn btn-primary">Save Pilot</button>
             </div>
         </div>
     </div>
 
-    <div id="mission-modal" class="modal-overlay" style="display: none;"> 
+    <div id="mission-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="mission-modal-title"> 
         <div class="modal-content">
-            <h2 style="margin-bottom: 24px;">Dispatch Mission</h2>
+            <h2 id="mission-modal-title" style="margin-bottom: 24px;">Dispatch Mission</h2>
             <div class="form-group">
-                <label>Destination</label>
-                <input type="text" id="mission-dest" class="input-field" placeholder="e.g., North Sector Warehouse">
+                <label for="mission-dest">Destination</label>
+                <input type="text" id="mission-dest" class="input-field" placeholder="e.g., North Sector Warehouse" autocomplete="off">
             </div>
             <div class="form-group">
-                <label>Assign Drone</label>
-                <select id="drone-select" class="input-field">
-                    </select>
+                <label for="drone-select">Assign Drone</label>
+                <select id="drone-select" class="input-field"></select>
             </div>
             <div class="form-group">
-                <label>Assign Pilot</label>
-                <select id="pilot-select" class="input-field">
-                    </select>
+                <label for="pilot-select">Assign Pilot</label>
+                <select id="pilot-select" class="input-field"></select>
             </div>
             <div style="display: flex; gap: 12px; margin-top: 32px; justify-content: flex-end;">
-                <button class="btn btn-secondary">Cancel</button>
-                <button id="save-mission-btn" class="btn btn-primary">Launch Mission</button>
+                <button type="button" class="btn btn-secondary" data-close="mission-modal">Cancel</button>
+                <button type="button" id="save-mission-btn" class="btn btn-primary">Launch Mission</button>
             </div>
         </div>
     </div>
 
-    <div id="toast-container"></div>
+    <div id="toast-container" aria-live="polite"></div>
 
     <script src="js/state.js"></script>
     <script src="js/api.js"></script>
     <script src="js/app.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Subscribe the UI to the AppStore we built in state.js
+            window.store.subscribe(() => {
+                const metrics = window.store.metrics;
+                document.getElementById('metric-missions').textContent = metrics.activeMissionsCount;
+                document.getElementById('metric-drones').textContent = metrics.availableDronesCount;
+            });
+        });
+    </script>
 </body>
 </html>

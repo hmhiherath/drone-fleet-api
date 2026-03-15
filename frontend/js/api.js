@@ -1,76 +1,93 @@
 // frontend/js/api.js
 
-const API_BASE_URL = 'http://localhost:8080/api';
+/**
+ * --- Architectural Improvement: Environment Agnostic URL ---
+ * By using a relative path '/api' instead of 'http://localhost:8080/api', 
+ * we allow an Nginx reverse proxy (in your Docker setup) to route requests properly.
+ * This entirely eliminates CORS issues and allows the app to run on any domain/IP.
+ */
+const API_BASE_URL = '/api';
 
 /**
- * Toast Notification System
- * Displays glassmorphic alerts for API errors or success messages.
+ * --- Architectural Improvement: Standardized Error Handling ---
+ * Custom Error class to normalize API failures. This prepares the frontend
+ * to gracefully handle standard RFC 7807 Problem Details from Spring Boot.
  */
-function showToast(message, type = 'danger') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-
-    const toast = document.createElement('div');
-    toast.className = `toast`;
-    toast.style.borderLeft = `4px solid var(--accent-${type})`;
-    toast.textContent = message;
-    
-    container.appendChild(toast);
-    
-    requestAnimationFrame(() => {
-        toast.style.transform = 'translateY(0)';
-        toast.style.opacity = '1';
-    });
-    
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(-20px)';
-        setTimeout(() => toast.remove(), 300);
-    }, 4000);
+class ApiError extends Error {
+    constructor(message, status, details = null) {
+        super(message);
+        this.status = status;
+        this.details = details;
+        this.name = 'ApiError';
+    }
 }
 
 /**
- * Core API Object
- * Handles all CRUD operations for Drones, Pilots, and Missions.
+ * Core API Client
+ * Strictly handles HTTP communication. 
+ * ZERO DOM manipulation, HTML rendering, or UI state logic belongs here.
  */
 const api = {
     async request(endpoint, options = {}) {
         try {
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-                headers: { 'Content-Type': 'application/json' },
+            // Ensure endpoint starts with a slash
+            const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+            
+            const response = await fetch(`${API_BASE_URL}${normalizedEndpoint}`, {
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json' 
+                },
                 ...options
             });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Server Error: ${response.status}`);
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch (e) {
+                    errorData = { message: `Server Error: ${response.status} ${response.statusText}` };
+                }
+                
+                // Throwing a structured error allows the UI layer to show precise toast messages
+                throw new ApiError(
+                    errorData.detail || errorData.message || 'An unexpected error occurred', 
+                    response.status,
+                    errorData
+                );
             }
 
-            return response.status === 204 ? true : await response.json();
+            // Handle 204 No Content (typically used for DELETE requests)
+            if (response.status === 204) return true;
+            
+            return await response.json();
             
         } catch (error) {
-            console.error(`API Fetch Error [${endpoint}]:`, error);
-            showToast(error.message || 'Connection lost. Is the backend running?', 'danger');
-            throw error;
+            // Log the technical error for developers, but throw it to the UI layer
+            // so app.js can trigger the showToast() function.
+            console.error(`[API Fetch Error] ${options.method || 'GET'} ${endpoint}:`, error);
+            throw error; 
         }
     },
 
     // ==========================================
     // PHASE 1 & 2: DRONE MANAGEMENT
     // ==========================================
-    async getDrones() { return this.request('/drones'); },
+    async getDrones() { 
+        return this.request('/drones'); 
+    },
     
     async createDrone(droneData) {
-        return this.request('/drones', {
-            method: 'POST',
-            body: JSON.stringify(droneData)
+        return this.request('/drones', { 
+            method: 'POST', 
+            body: JSON.stringify(droneData) 
         });
     },
 
     async updateDrone(id, droneData) {
-        return this.request(`/drones/${id}`, {
-            method: 'PUT',
-            body: JSON.stringify(droneData)
+        return this.request(`/drones/${id}`, { 
+            method: 'PUT', 
+            body: JSON.stringify(droneData) 
         });
     },
 
@@ -81,12 +98,14 @@ const api = {
     // ==========================================
     // PHASE 3: PILOT ROSTER
     // ==========================================
-    async getPilots() { return this.request('/pilots'); },
+    async getPilots() { 
+        return this.request('/pilots'); 
+    },
 
     async createPilot(pilotData) {
-        return this.request('/pilots', {
-            method: 'POST',
-            body: JSON.stringify(pilotData)
+        return this.request('/pilots', { 
+            method: 'POST', 
+            body: JSON.stringify(pilotData) 
         });
     },
 
@@ -95,26 +114,31 @@ const api = {
     },
 
     // ==========================================
-    // PHASE 4: MISSION CONTROL (Relationships)
+    // PHASE 4: MISSION CONTROL
     // ==========================================
-    async getMissions() { return this.request('/flight-missions'); },
+    async getMissions() { 
+        return this.request('/flight-missions'); 
+    },
 
     async createMission(missionData) {
-        // missionData should contain { destination, droneId, pilotId }
-        return this.request('/flight-missions', {
-            method: 'POST',
-            body: JSON.stringify(missionData)
+        return this.request('/flight-missions', { 
+            method: 'POST', 
+            body: JSON.stringify(missionData) 
         });
     },
 
     async updateMissionStatus(id, status) {
         return this.request(`/flight-missions/${id}/status`, {
             method: 'PATCH',
-            body: JSON.stringify({ status })
+            // Note: If your backend expects a specific DTO, ensure this matches.
+            body: JSON.stringify({ status }) 
         });
     },
 
-    // Utility for Mission Modal: Fetch only IDLE drones and AVAILABLE pilots
+    /**
+     * Data aggregation belongs in the API/Service layer.
+     * Fetches only IDLE drones and AVAILABLE pilots for the mission modal.
+     */
     async getAvailableAssets() {
         const [drones, pilots] = await Promise.all([
             this.getDrones(),
@@ -124,46 +148,5 @@ const api = {
             drones: drones.filter(d => d.status === 'IDLE'),
             pilots: pilots.filter(p => p.status === 'AVAILABLE' || !p.status)
         };
-    }
-};
-
-// ==========================================
-// SHARED UI RENDERING (Phase 3 & 4)
-// ==========================================
-
-function renderPilotCards(pilots) {
-    if (!pilots || pilots.length === 0) {
-        return `<div class="empty-state">No pilots registered in the roster.</div>`;
-    }
-
-    return `<div class="card-grid">` + pilots.map(pilot => `
-        <div class="drone-card">
-            <div class="card-header">
-                <div>
-                    <span class="secondary">ID: ${pilot.id}</span>
-                    <h3>${pilot.name}</h3>
-                </div>
-                <button onclick="handleDeletePilot(${pilot.id})" class="action-btn delete" title="Remove Pilot">🗑</button>
-            </div>
-            <div class="card-body">
-                <p class="secondary" style="font-size: 13px; margin-bottom: 8px;">License: ${pilot.licenseNumber}</p>
-                <span class="badge ${pilot.status === 'ON_MISSION' ? 'warning' : 'success'}">
-                    ${pilot.status || 'AVAILABLE'}
-                </span>
-            </div>
-        </div>
-    `).join('') + `</div>`;
-}
-
-// Global handler for the Delete Pilot button
-window.handleDeletePilot = async (id) => {
-    if (!confirm("Are you sure you want to remove this pilot from the roster?")) return;
-    try {
-        await api.deletePilot(id);
-        showToast("Pilot removed successfully", "success");
-        // Trigger a view refresh (assuming loadPilotsView is defined in app.js)
-        if (window.loadPilotsView) window.loadPilotsView();
-    } catch (e) {
-        console.error("Delete Pilot failed", e);
     }
 };
